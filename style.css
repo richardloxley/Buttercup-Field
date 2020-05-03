@@ -49,10 +49,40 @@
 	margin-top: 5px;
 }
 
-.active-user
+.active-user, .inactive-user, .last-used
 {
 	font-size: 80%;
-	background-color:#ccc;
 	margin-right: 10px;
-	padding: 2px;
+	padding-top: 4px;
+	padding-bottom: 4px;
+	padding-left: 4px;
+	padding-right: 4px;
+}
+
+.active-user
+{
+	background-color:#ccc;
+}
+
+.inactive-user
+{
+	background-color:#eee;
+}
+
+.inactive-user, .last-used
+{
+	color: #777;
+}
+
+.footer
+{
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	height: 14px;
+	width: 100%;
+	background: #FFFED0;
+	padding: 8px;
+	font-size: 80%;
+	text-align: center;
 }

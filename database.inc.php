@@ -1,10 +1,13 @@
 <?php
 
 include_once("config.inc.php");
+include_once("debug.inc.php");
 
 
 function execute_sql($sql)
 {
+	// debug($sql);
+
 	global $DB_SERVERNAME;
 	global $DB_USERNAME;
 	global $DB_PASSWORD;
@@ -34,7 +37,7 @@ function get_chat_rooms()
 {
 	$rooms = array();
 
-	$sql = "select * from rooms order by timestamp asc";
+	$sql = "select rooms.*, count(user_id) as active_users from rooms left join active_users on rooms.id = active_users.room_id group by rooms.id order by active_users desc, last_used desc, created asc";
 
 	$result = execute_sql($sql);
 
@@ -83,7 +86,7 @@ function getUsersIn($roomID)
 {
 	$sanitised = sanitiseRoomID($roomID);
 
-	$sql = "select nickname from active_users where room_id = '$sanitised' order by last_seen";
+	$sql = "select nickname, has_javascript from active_users where room_id = '$sanitised' order by first_seen";
 
 	$result = execute_sql($sql);
 
@@ -93,7 +96,7 @@ function getUsersIn($roomID)
 	{
 		while ($row = mysqli_fetch_array($result))
 		{
-			$names[] = $row['nickname'];
+			$names[] = [ "name" => $row['nickname'], "mobile" => !$row['has_javascript'] ];
 		}
 		mysqli_free_result($result);
 	}
@@ -102,11 +105,51 @@ function getUsersIn($roomID)
 }
 
 
+function roomOnlyContainsMobileUsers($roomID)
+{
+	$sanitised = sanitiseRoomID($roomID);
+
+	$sql = "select sum(has_javascript) as javascript, count(*) as total from active_users where room_id = '$roomID'";
+
+	$result = execute_sql($sql);
+
+	if ($result)
+	{
+		$row = mysqli_fetch_array($result);
+		$total = $row['total'];
+		$javascript = $row['javascript'];
+		mysqli_free_result($result);
+
+		if ($total > 0 && $javascript == 0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+
+
+function updateRoom($roomID)
+{
+	$sql = "update rooms set last_used = current_timestamp() where id = '$roomID'";
+	execute_sql($sql);
+}
+
 
 function userJoined($roomID, $userID, $userName)
 {
-	$sql = "replace into active_users (room_id, user_id, nickname, last_seen) values ('$roomID', '$userID', '$userName', current_timestamp())";
+	$sql = "insert into active_users (room_id, user_id, nickname, first_seen, last_seen, has_javascript) values ('$roomID', '$userID', '$userName', current_timestamp(), current_timestamp(), false) on duplicate key update nickname = '$userName', last_seen = current_timestamp()";
 	execute_sql($sql);
+
+	updateRoom($roomID);
 }
 
 
@@ -114,4 +157,37 @@ function userLeft($roomID, $userID)
 {
 	$sql = "delete from active_users where room_id = '$roomID' and user_id = '$userID'";
 	execute_sql($sql);
+
+	updateRoom($roomID);
+}
+
+
+function setAllUsers($roomID, $allusers)
+{
+	$all_ids = "";
+
+	// add/update each user found
+	foreach ($allusers as $id => $name)
+	{
+		userJoined($roomID, $id, $name);
+		if ($all_ids != "")
+		{
+			$all_ids .= ", ";
+		}
+		$all_ids .= "'$id'";
+	}
+
+	// delete any that weren't in that list
+	$sql = "delete from active_users where room_id = '$roomID' and user_id not in ($all_ids)";
+	execute_sql($sql);
+
+	updateRoom($roomID);
+}
+
+function userIsActive($roomID, $userID)
+{
+	$sql = "update active_users set has_javascript = true, last_seen = current_timestamp() where room_id = '$roomID' and user_id = '$userID'";
+	execute_sql($sql);
+
+	updateRoom($roomID);
 }

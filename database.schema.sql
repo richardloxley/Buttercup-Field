@@ -26,7 +26,9 @@ CREATE TABLE `active_users` (
   `room_id` varchar(100) NOT NULL,
   `user_id` varchar(20) NOT NULL,
   `nickname` varchar(100) NOT NULL,
+  `first_seen` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `last_seen` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `has_javascript` tinyint(1) NOT NULL,
   PRIMARY KEY (`room_id`,`user_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -42,7 +44,8 @@ CREATE TABLE `rooms` (
   `id` varchar(100) NOT NULL,
   `name` varchar(100) NOT NULL,
   `description` varchar(500) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_used` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -56,4 +59,4 @@ CREATE TABLE `rooms` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2020-05-03 17:58:46
+-- Dump completed on 2020-05-03 23:38:35

@@ -10,13 +10,19 @@ if (isset($_GET['room']))
 {
 	$room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']);
 
-	// user name
+	// the user that's reporting this
+	if (isset($_GET['myid']))
+	{
+		$myid = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['myid']);
+	}
+
+	// user name of who's affected
 	if (isset($_GET['name']))
 	{
                 $name = preg_replace($NICKNAME_REGEX, '', $_GET['name']);
 	}
 
-	// user IDs
+	// user IDs affected
 	if (isset($_GET['joined']))
 	{
 		$joined = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['joined']);
@@ -33,29 +39,66 @@ if (isset($_GET['room']))
 	{
 		$renamed = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['renamed']);
 	}
+	if (isset($_GET['allusers']))
+	{
+		$raw_allusers = json_decode($_GET['allusers']);
+		foreach ($raw_allusers as $id => $name)
+		{
+			$id = preg_replace('/[^a-zA-Z0-9]/', '', $id);
+			$name = preg_replace($NICKNAME_REGEX, '', $name);
+			$allusers[$id] = $name;
+		}
+	}
 
 	if (isset($joined) && isset($name))
 	{
 		userJoined($room, $joined, $name);
-		debug("Room $room: user $joined ($name) joined");
+		if (isset($myid))
+		{
+			userIsActive($room, $myid);
+		}
+		debug("Room $room: $myid reports user $joined ($name) joined");
 	}
 
 	if (isset($left))
 	{
 		userLeft($room, $left);
-		debug("Room $room: user $left left");
+		if (isset($myid) && $myid != $left)
+		{
+			userIsActive($room, $myid);
+		}
+		debug("Room $room: $myid reports user $left left");
 	}
 
 	if (isset($kicked))
 	{
 		userLeft($room, $kicked);
-		debug("Room $room: user $kicked kicked out");
+		if (isset($myid))
+		{
+			userIsActive($room, $myid);
+		}
+		debug("Room $room: $myid reports user $kicked kicked out");
 	}
 
 	if (isset($renamed) && isset($name))
 	{
 		userJoined($room, $renamed, $name);
-		debug("Room $room: user $renamed renamed to $name");
+		if (isset($myid))
+		{
+			userIsActive($room, $myid);
+		}
+		debug("Room $room: $myid reports user $renamed renamed to $name");
+	}
+
+	if (isset($allusers))
+	{
+		setAllUsers($room, $allusers);
+		if (isset($myid))
+		{
+			userIsActive($room, $myid);
+		}
+		$numUsers = count($allusers);
+		debug("Room $room: $myid reports total $numUsers users identified");
 	}
 }
 

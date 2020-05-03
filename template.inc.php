@@ -24,6 +24,9 @@ function draw_header()
 function draw_footer()
 {
 	?>
+		<div class="footer">
+			Powered by <a href="https://github.com/richardloxley/Buttercup-Field">Buttercup Field</a> by <a href="https://www.richardloxley.com/">Richard Loxley</a>
+		</div>
 		</body>
 		</html>
 	<?php
@@ -64,6 +67,51 @@ function draw_blackboard()
 	<?php
 
 	echo "... blackboard will appear here ...";
+}
+
+
+function pluralise($number, $units)
+{
+	if ($number == 1)
+	{
+		return $number . " " . $units;
+	}
+	else
+	{
+		return $number . " " . $units . "s";
+	}
+}
+
+
+function moreThanADaySince($mysql_timestamp)
+{
+	$timestamp = strtotime($mysql_timestamp);
+	$seconds = time() - $timestamp;
+	return ($seconds > 60 * 60 * 24);
+}
+
+
+function humanTimeSince($mysql_timestamp)
+{
+	$timestamp = strtotime($mysql_timestamp);
+	$seconds = time() - $timestamp;
+
+	if ($seconds < 60)
+	{
+		// return "last updated " . pluralise($seconds, "second") . " ago";
+		// don't both showing anything until it's been more than a minute
+		return "";
+	}
+
+	$minutes = floor($seconds / 60);
+
+	if ($minutes < 60)
+	{
+		return "last updated " . pluralise($minutes, "minute") . " ago";
+	}
+
+	$hours = floor($minutes / 60);
+	return "last updated " . pluralise($hours, "hour") . " ago";
 }
 
 
@@ -129,12 +177,42 @@ function draw_video_chat()
 				echo "</div>";
 
 				echo "<div class='room-occupants'>";
+
 				$users = getUsersIn($roomID);
-				foreach($users as $user)
+				$onlyMobile = roomOnlyContainsMobileUsers($roomID);
+
+				// don't show users if they are only mobile users and we haven't seen
+				// them for more than a day - they've probably dropped off by now
+				if (!$onlyMobile || !moreThanADaySince($room['last_used']))
 				{
-					echo '<span class=active-user>';
-					echo $user;
-					echo '</span>';
+					foreach($users as $user)
+					{
+						if ($onlyMobile)
+						{
+							echo '<span class=inactive-user>';
+						}
+						else
+						{
+							echo '<span class=active-user>';
+						}
+
+						echo $user["name"];
+
+						if ($user["mobile"])
+						{
+							// mobile phone unicode
+							echo "&#x1F4F1";
+						}
+
+						echo '</span>';
+					}
+
+					if ($onlyMobile)
+					{
+						echo '<span class=last-used>';
+						echo humanTimeSince($room['last_used']);
+						echo '</span>';
+					}
 				}
 				echo "</div>";
 
