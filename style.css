@@ -1,0 +1,58 @@
+.password-hint
+{
+	font-style: italic;
+}
+
+.password-wrong
+{
+	font-style: italic;
+	color: red;
+}
+
+.logout
+{
+	float: right;
+}
+
+.mobile-banner img
+{
+	height: 40px;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.mobile-banner input
+{
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.room
+{
+	padding-top: 10px;
+	padding-bottom: 10px;
+}
+.room-name
+{
+	font-weight: bold;
+}
+
+.room-description
+{
+	font-style: italic;
+}
+
+.room-occupants
+{
+	margin-top: 5px;
+}
+
+.active-user
+{
+	font-size: 80%;
+	background-color:#ccc;
+	margin-right: 10px;
+	padding: 2px;
+}
