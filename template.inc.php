@@ -1,7 +1,5 @@
 <?php
 
-include_once("jitsi.inc.php");
-
 
 function draw_header()
 {
@@ -15,6 +13,7 @@ function draw_header()
 			<meta name="viewport" content="width=device-width, initial-scale=1">
 			<title><?php echo $SITE_TITLE;?></title>
 			<link rel="stylesheet" href="style.css" type="text/css">
+			<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
 		</head>
 		<body>
 	<?php
@@ -23,10 +22,17 @@ function draw_header()
 
 function draw_footer()
 {
-	?>
+	// only draw banner when we're logged in
+	if (getNickname() != "")
+	{
+		?>
 		<div class="footer">
 			Powered by <a href="https://github.com/richardloxley/Buttercup-Field">Buttercup Field</a> by <a href="https://www.richardloxley.com/">Richard Loxley</a>
 		</div>
+		<?php
+	}
+
+	?>
 		</body>
 		</html>
 	<?php
@@ -35,12 +41,24 @@ function draw_footer()
 
 function draw_nickname_form()
 {
-	if (edittingNickname() || getNickname() == "")
+	if (duplicateNickname() != "")
+	{
+		?>
+			<p>
+			Someone else has already used that nickname.  Was that you on a different computer?
+			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
+			<input type="hidden" name="submitted_nickname" value="<?php echo duplicateNickname();?>">
+			<input type="submit" name="duplicate_me" value="Yes that was me!">
+			<input type="submit" name="duplicate_someone_else" value="No - I'll choose another nickname">
+			</form>
+		<?php
+	}
+	else if (edittingNickname() || getNickname() == "")
 	{
 		?>
 			<p>
 			<form method="post" action="<?php echo $_SERVER['REQUEST_URI'] ?>">
-			Please choose a nickname: <input type="text" name="nickname" value="<?php echo getNickname();?>" size=50 maxlength=100>
+			Please choose a nickname: <input type="text" name="submitted_nickname" value="<?php echo getNickname();?>" size=50 maxlength=100>
 			<input type="submit" value="Enter">
 			</form>
 		<?php
@@ -58,166 +76,83 @@ function draw_nickname_form()
 }
 
 
-function draw_blackboard()
+function draw_users_online()
 {
 	?>
 		<h2>
-			Blackboard
+		Users
 		</h2>
+
+		<h3>
+		Online now
+		</h3>
 	<?php
 
-	echo "... blackboard will appear here ...";
-}
+	$someone_chatting = false;
+	$someone_on_video = false;
+	$someone_on_mobile = false;
 
+	$users = get_users_active();
 
-function pluralise($number, $units)
-{
-	if ($number == 1)
+	foreach ($users as $name => $options)
 	{
-		return $number . " " . $units;
-	}
-	else
-	{
-		return $number . " " . $units . "s";
-	}
-}
+		echo '<span class=active-user>';
+		echo $name;
 
+		if ($options["chatting"])
+		{
+			echo " " . symbolSpeech();
+			$someone_chatting = true;
+		}
 
-function moreThanADaySince($mysql_timestamp)
-{
-	$timestamp = strtotime($mysql_timestamp);
-	$seconds = time() - $timestamp;
-	return ($seconds > 60 * 60 * 24);
-}
+		if ($options["video"])
+		{
+			echo " " . symbolCinema();
+			$someone_on_video = true;
+		}
 
+		if ($options["mobile"])
+		{
+			echo " " . symbolMobilePhone();
+			$someone_on_mobile = true;
+		}
 
-function humanTimeSince($mysql_timestamp)
-{
-	$timestamp = strtotime($mysql_timestamp);
-	$seconds = time() - $timestamp;
-
-	if ($seconds < 60)
-	{
-		// return "last updated " . pluralise($seconds, "second") . " ago";
-		// don't both showing anything until it's been more than a minute
-		return "";
+		echo '</span>';
 	}
 
-	$minutes = floor($seconds / 60);
-
-	if ($minutes < 60)
+	if ($someone_chatting || $someone_on_video || $someone_on_mobile)
 	{
-		return "last updated " . pluralise($minutes, "minute") . " ago";
+		echo "<p>";
 	}
 
-	$hours = floor($minutes / 60);
-	return "last updated " . pluralise($hours, "hour") . " ago";
-}
+	if ($someone_chatting)
+	{
+		echo symbolSpeech() . " = using text chat ";
+	}
+
+	if ($someone_on_video)
+	{
+		echo symbolCinema() . " = in a video room ";
+	}
+
+	if ($someone_on_mobile)
+	{
+		echo symbolMobilePhone() . " = on a mobile device";
+	}
 
 
-function draw_video_chat()
-{
 	?>
-		<h2>
-			Video chat rooms
-		</h2>
+		<h3>
+		Earlier today
+		</h3>
 	<?php
 
-	if (canDeviceShowVideo())
+	$users = get_users_active_earlier();
+
+	foreach ($users as $name)
 	{
-		$rooms = get_chat_rooms();
-
-		if (count($rooms) == 0)
-		{
-			echo "No rooms created yet";
-		}
-		else
-		{
-			$nickname = getNickname();
-			if ($nickname == "")
-			{
-				echo "<p>";
-				echo "Please set a nickname if you would like to join a room.";
-			}
-
-
-			foreach ($rooms as $room)
-			{
-				$roomID = $room['id'];
-				$roomName = $room['name'];
-
-				$url = "room/" . $roomID;
-
-				if (isIOS())
-				{
-					$url = jitsiDeeplinkIos($roomID, $roomName, $nickname);
-				}
-				else if (isAndroid())
-				{
-					$url = jitsiDeeplinkAndroid($roomID, $roomName,$nickname);
-				}
-
-				echo "<div class='room'>";
-
-				echo "<div class='room-name'>";
-				if ($nickname != "")
-				{
-					echo "<a href='" . $url . "' target='_blank' rel='noopener noreferrer'>";
-					echo $room['name'];
-					echo "</a>";
-				}
-				else
-				{
-					echo $room['name'];
-				}
-				echo "</div>";
-
-				echo "<div class='room-description'>";
-				echo $room['description'];
-				echo "</div>";
-
-				echo "<div class='room-occupants'>";
-
-				$users = getUsersIn($roomID);
-				$onlyMobile = roomOnlyContainsMobileUsers($roomID);
-
-				// don't show users if they are only mobile users and we haven't seen
-				// them for more than a day - they've probably dropped off by now
-				if (!$onlyMobile || !moreThanADaySince($room['last_used']))
-				{
-					foreach($users as $user)
-					{
-						if ($onlyMobile)
-						{
-							echo '<span class=inactive-user>';
-						}
-						else
-						{
-							echo '<span class=active-user>';
-						}
-
-						echo $user["name"];
-
-						if ($user["mobile"])
-						{
-							// mobile phone unicode
-							echo "&#x1F4F1";
-						}
-
-						echo '</span>';
-					}
-
-					if ($onlyMobile)
-					{
-						echo '<span class=last-used>';
-						echo humanTimeSince($room['last_used']);
-						echo '</span>';
-					}
-				}
-				echo "</div>";
-
-				echo "</div>";
-			}
-		}
+		echo '<span class=inactive-user>';
+		echo $name;
+		echo '</span>';
 	}
 }

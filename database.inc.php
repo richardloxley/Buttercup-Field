@@ -23,13 +23,45 @@ function execute_sql($sql)
 
 	if ($result = mysqli_query($conn, $sql))
 	{
+		mysqli_close($conn);
 		return $result;
 	}
 	else
 	{
 		error_log("MySQL error: " . mysqli_error($conn) . " while executing: " . $sql);
+		mysqli_close($conn);
 		return null;
 	}
+}
+
+
+function post_text_chat($nickname, $message)
+{
+	$user_id = get_user_id($nickname);
+	$sql = "insert into text_chat (user_id, message) values ('$user_id', '$message')";
+	execute_sql($sql);
+}
+
+
+function get_text_chats($hours)
+{
+	$messages = array();
+
+	$sql = "select posted, message, nickname from text_chat inner join users using (user_id) where posted > date_sub(now(), interval $hours hour) order by posted asc";
+
+	$result = execute_sql($sql);
+
+	if ($result)
+	{
+		while ($row = mysqli_fetch_array($result))
+		{
+			$messages[] = $row;
+		}
+
+		mysqli_free_result($result);
+	}
+
+	return $messages;
 }
 
 
@@ -37,7 +69,7 @@ function get_chat_rooms()
 {
 	$rooms = array();
 
-	$sql = "select rooms.*, count(user_id) as active_users from rooms left join active_users on rooms.id = active_users.room_id group by rooms.id order by active_users desc, last_used desc, created asc";
+	$sql = "select rooms.*, count(jitsi_user_id) as active_users from rooms left join video_users on rooms.id = video_users.room_id group by rooms.id order by active_users desc, last_used desc, created asc";
 
 	$result = execute_sql($sql);
 
@@ -55,18 +87,9 @@ function get_chat_rooms()
 }
 
 
-function sanitiseRoomID($room)
-{
-	return preg_replace("/[^a-zA-Z0-9]/", "", $room);
-}
-
-
 function getRoomNameFor($roomID)
 {
-	$sanitised = sanitiseRoomID($roomID);
-
-	$sql = "select name from rooms where id = '" . $sanitised . "'";
-
+	$sql = "select name from rooms where id = '" . $roomID . "'";
 	$result = execute_sql($sql);
 
 	$name = "";
@@ -84,10 +107,7 @@ function getRoomNameFor($roomID)
 
 function getUsersIn($roomID)
 {
-	$sanitised = sanitiseRoomID($roomID);
-
-	$sql = "select nickname, has_javascript from active_users where room_id = '$sanitised' order by first_seen";
-
+	$sql = "select jitsi_name, has_javascript from video_users where room_id = '$roomID' order by first_seen";
 	$result = execute_sql($sql);
 
 	$names = array();
@@ -96,7 +116,7 @@ function getUsersIn($roomID)
 	{
 		while ($row = mysqli_fetch_array($result))
 		{
-			$names[] = [ "name" => $row['nickname'], "mobile" => !$row['has_javascript'] ];
+			$names[] = [ "name" => $row['jitsi_name'], "mobile" => !$row['has_javascript'] ];
 		}
 		mysqli_free_result($result);
 	}
@@ -107,10 +127,7 @@ function getUsersIn($roomID)
 
 function roomOnlyContainsMobileUsers($roomID)
 {
-	$sanitised = sanitiseRoomID($roomID);
-
-	$sql = "select sum(has_javascript) as javascript, count(*) as total from active_users where room_id = '$roomID'";
-
+	$sql = "select sum(has_javascript) as javascript, count(*) as total from video_users where room_id = '$roomID'";
 	$result = execute_sql($sql);
 
 	if ($result)
@@ -144,18 +161,18 @@ function updateRoom($roomID)
 }
 
 
-function userJoined($roomID, $userID, $userName)
+function userJoined($roomID, $jitsiUserID, $jitsiName)
 {
-	$sql = "insert into active_users (room_id, user_id, nickname, first_seen, last_seen, has_javascript) values ('$roomID', '$userID', '$userName', current_timestamp(), current_timestamp(), false) on duplicate key update nickname = '$userName', last_seen = current_timestamp()";
+	$sql = "insert into video_users (room_id, jitsi_user_id, jitsi_name, first_seen, last_seen, has_javascript) values ('$roomID', '$jitsiUserID', '$jitsiName', current_timestamp(), current_timestamp(), false) on duplicate key update jitsi_name = '$jitsiName', last_seen = current_timestamp()";
 	execute_sql($sql);
 
 	updateRoom($roomID);
 }
 
 
-function userLeft($roomID, $userID)
+function userLeft($roomID, $jitsiUserID)
 {
-	$sql = "delete from active_users where room_id = '$roomID' and user_id = '$userID'";
+	$sql = "delete from video_users where room_id = '$roomID' and jitsi_user_id = '$jitsiUserID'";
 	execute_sql($sql);
 
 	updateRoom($roomID);
@@ -164,6 +181,7 @@ function userLeft($roomID, $userID)
 
 function setAllUsers($roomID, $allusers)
 {
+
 	$all_ids = "";
 
 	// add/update each user found
@@ -178,16 +196,249 @@ function setAllUsers($roomID, $allusers)
 	}
 
 	// delete any that weren't in that list
-	$sql = "delete from active_users where room_id = '$roomID' and user_id not in ($all_ids)";
+	$sql = "delete from video_users where room_id = '$roomID' and jitsi_user_id not in ($all_ids)";
 	execute_sql($sql);
 
 	updateRoom($roomID);
 }
 
-function userIsActive($roomID, $userID)
+
+function userIsActiveInRoom($roomID, $jitsiUserID)
 {
-	$sql = "update active_users set has_javascript = true, last_seen = current_timestamp() where room_id = '$roomID' and user_id = '$userID'";
+	$sql = "update video_users set has_javascript = true, last_seen = current_timestamp() where room_id = '$roomID' and jitsi_user_id = '$jitsiUserID'";
 	execute_sql($sql);
 
 	updateRoom($roomID);
 }
+
+
+function get_user($nickname)
+{
+	$sql = "select * from users where nickname = '$nickname'";
+
+	$result = execute_sql($sql);
+
+	$user = null;
+
+	if ($result)
+	{
+		$user = mysqli_fetch_array($result);
+		mysqli_free_result($result);
+	}
+
+	return $user;
+}
+
+
+function get_user_id($nickname)
+{
+	$user = get_user($nickname);
+
+	if ($user == null)
+	{
+		return 0;
+	}
+	else
+	{
+		return $user["user_id"];
+	}
+}
+
+
+function create_user($nickname)
+{
+	$sql = "insert into users (nickname) values ('$nickname')";
+	execute_sql($sql);
+}
+
+
+function user_is_active($nickname)
+{
+	$sql = "update users set last_active = current_timestamp() where nickname = '$nickname'";
+	execute_sql($sql);
+}
+
+
+function get_users_active()
+{
+	// active on site in last minute, also note if they've posted a text chat in the last 5 minutes
+	$sql = "select nickname, (not posted is null) as active_in_chat from users left join (select * from text_chat where (posted > date_sub(now(), interval 5 minute))) as active_texts using (user_id) where (last_active > date_sub(now(), interval 1 minute)) group by nickname";
+
+	$result = execute_sql($sql);
+
+	$users = array();
+
+	if ($result)
+	{
+		while ($row = mysqli_fetch_array($result))
+		{
+			$name = $row['nickname'];
+			$users[$name] = [ "chatting" => ($row['active_in_chat'] == 1), "video" => false, "mobile" => false ];
+		}
+		mysqli_free_result($result);
+	}
+
+	// also find active video users (because Jitsi names can be changed, the nicknames may not match)
+	// we also cannot be sure if a user is truly active if only mobile users are left in a room as
+	// they don't have javascript to report back when they leave, so we'll omit any rooms with only mobile users
+	$sql = "select jitsi_name as name, (not has_javascript) as mobile from (select room_id from (select room_id, sum(has_javascript) as js_count from video_users group by room_id) as rooms where js_count > 0) as rooms_we_can_see_into join video_users using (room_id)";
+
+	$result = execute_sql($sql);
+
+	if ($result)
+	{
+		while ($row = mysqli_fetch_array($result))
+		{
+			$name = $row['name'];
+			if (isset($users[$name]))
+			{
+				$users[$name]["video"] = true;
+				$users[$name]["mobile"] = $row["mobile"];	
+			}
+			else
+			{
+				$users[$name] = [ "chatting" => false, "video" => true, "mobile" => $row["mobile"] ];
+			}
+		}
+		mysqli_free_result($result);
+	}
+
+	ksort($users, SORT_NATURAL | SORT_FLAG_CASE);
+
+	return $users;
+}
+
+
+function get_users_active_earlier()
+{
+	// active after midnight but more than a minute ago
+	$sql = "select nickname from users where last_active < date_sub(now(), interval 1 minute) and last_active > timestamp(current_date) order by nickname asc";
+
+	$result = execute_sql($sql);
+
+	$names = array();
+
+	if ($result)
+	{
+		while ($row = mysqli_fetch_array($result))
+		{
+			$names[] = $row['nickname'];
+		}
+		mysqli_free_result($result);
+	}
+
+	return $names;
+}
+
+
+function new_blackboard($nickname)
+{
+	$sql = "select max(board_id) as max_board_id from blackboards";
+	$result = execute_sql($sql);
+
+	$new_board_id = 1;
+
+	if ($result)
+	{
+		$row = mysqli_fetch_array($result);
+		$max_board_id = $row['max_board_id'];
+		if ($max_board_id != null)
+		{
+			$new_board_id = $max_board_id + 1;
+		}
+		mysqli_free_result($result);
+	}
+
+	append_to_blackboard($new_board_id, $nickname, "");
+}
+
+
+function get_blackboard_ids()
+{
+	$sql = "select board_id from blackboards group by board_id order by board_id asc";
+	$result = execute_sql($sql);
+
+	$boards = array();
+
+	while ($row = mysqli_fetch_array($result))
+	{
+		$boards[] = $row["board_id"];
+	}
+
+	mysqli_free_result($result);
+
+	return $boards;
+}
+
+
+function get_blackboard_contents($board_id)
+{
+	$sql = "select nickname, message_id, text, (sub_position > 0) as is_reply, edit_timestamp from blackboards inner join users using (user_id) where board_id = '$board_id' order by position asc, sub_position asc";
+
+	$result = execute_sql($sql);
+
+	$entries = array();
+
+	while ($row = mysqli_fetch_array($result))
+	{
+		$entries[] =
+		[
+			"message_id" => $row["message_id"],
+			"text" => $row["text"],
+			"is_reply" => $row["is_reply"],
+			"nickname" => $row["nickname"],
+			"edit_timestamp" => $row["edit_timestamp"]
+		];
+	}
+
+	mysqli_free_result($result);
+
+	return $entries;
+}
+
+
+function append_to_blackboard($board_id, $nickname, $text)
+{
+	$user_id = get_user_id($nickname);
+
+	$position_sql = "select max(position) as max_position from blackboards where board_id = '$board_id'";
+	$result = execute_sql($position_sql);
+
+	$new_position = 0;
+
+	if ($result)
+	{
+		$row = mysqli_fetch_array($result);
+		$max_position = $row['max_position'];
+		if ($max_position != null)
+		{
+			$new_position = $max_position + 1;
+		}
+		mysqli_free_result($result);
+	}
+
+	$sql = "insert into blackboards (board_id, user_id, text, position) values ('$board_id', '$user_id', '$text', '$new_position')";
+	$result = execute_sql($sql);
+}
+
+
+function blackboard_edit($board_id, $message_id, $nickname, $text)
+{
+}
+
+function blackboard_reply($board_id, $message_id, $nickname, $text)
+{
+}
+
+function delete_from_blackboard($board_id, $message_id)
+{
+}
+
+function blackboard_move_up($board_id, $message_id)
+{
+}
+
+function blackboard_move_down($board_id, $message_id)
+{
+}
+

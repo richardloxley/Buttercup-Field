@@ -13,8 +13,6 @@ $CONTACT_US_URL = "https://www.example.com/contact/";
 
 $JITSI_UNIQUE_ROOM_PREFIX = "ChangeThisToMakeYourChatRoomsUnique";
 
-$NICKNAME_REGEX = '/[^-\^\.\,\(\)\[\]\{\}\*\+\?_!= a-zA-Z0-9]/';
-
 $ROOM_DEFAULT_IMAGE = "/images/bigtop.jpg";
 
 $DB_SERVERNAME = "localhost";

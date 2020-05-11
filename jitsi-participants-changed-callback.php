@@ -3,49 +3,50 @@
 include_once("config.inc.php");
 include_once("database.inc.php");
 include_once("debug.inc.php");
+include_once("user-input.inc.php");
 
 
 // room ID
-if (isset($_GET['room']))
+if (is_variable_set('room'))
 {
-	$room = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['room']);
+	$room = sanitised_as_alphanumeric('room');
 
 	// the user that's reporting this
-	if (isset($_GET['myid']))
+	if (is_variable_set('myid'))
 	{
-		$myid = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['myid']);
+		$myid = sanitised_as_alphanumeric('myid');
 	}
 
 	// user name of who's affected
-	if (isset($_GET['name']))
+	if (is_variable_set('name'))
 	{
-                $name = preg_replace($NICKNAME_REGEX, '', $_GET['name']);
+                $name = sanitised_as_alphanumeric_extended('name');
 	}
 
 	// user IDs affected
-	if (isset($_GET['joined']))
+	if (is_variable_set('joined'))
 	{
-		$joined = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['joined']);
+		$joined = sanitised_as_alphanumeric('joined');
 	}
-	if (isset($_GET['left']))
+	if (is_variable_set('left'))
 	{
-		$left = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['left']);
+		$left = sanitised_as_alphanumeric('left');
 	}
-	if (isset($_GET['kicked']))
+	if (is_variable_set('kicked'))
 	{
-		$kicked = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['kicked']);
+		$kicked = sanitised_as_alphanumeric('kicked');
 	}
-	if (isset($_GET['renamed']))
+	if (is_variable_set('renamed'))
 	{
-		$renamed = preg_replace('/[^a-zA-Z0-9]/', '', $_GET['renamed']);
+		$renamed = sanitised_as_alphanumeric('renamed');
 	}
-	if (isset($_GET['allusers']))
+	if (is_variable_set('allusers'))
 	{
-		$raw_allusers = json_decode($_GET['allusers']);
-		foreach ($raw_allusers as $id => $name)
+		$unsafe_allusers = json_decode(get_unsafe_variable('allusers'));
+		foreach ($unsafe_allusers as $unsafe_id => $unsafe_name)
 		{
-			$id = preg_replace('/[^a-zA-Z0-9]/', '', $id);
-			$name = preg_replace($NICKNAME_REGEX, '', $name);
+			$id = to_alphanumeric($unsafe_id);
+			$name = to_alphanumeric_extended($unsafe_name);
 			$allusers[$id] = $name;
 		}
 	}
@@ -55,7 +56,7 @@ if (isset($_GET['room']))
 		userJoined($room, $joined, $name);
 		if (isset($myid))
 		{
-			userIsActive($room, $myid);
+			userIsActiveInRoom($room, $myid);
 		}
 		debug("Room $room: $myid reports user $joined ($name) joined");
 	}
@@ -65,7 +66,7 @@ if (isset($_GET['room']))
 		userLeft($room, $left);
 		if (isset($myid) && $myid != $left)
 		{
-			userIsActive($room, $myid);
+			userIsActiveInRoom($room, $myid);
 		}
 		debug("Room $room: $myid reports user $left left");
 	}
@@ -75,7 +76,7 @@ if (isset($_GET['room']))
 		userLeft($room, $kicked);
 		if (isset($myid))
 		{
-			userIsActive($room, $myid);
+			userIsActiveInRoom($room, $myid);
 		}
 		debug("Room $room: $myid reports user $kicked kicked out");
 	}
@@ -85,7 +86,7 @@ if (isset($_GET['room']))
 		userJoined($room, $renamed, $name);
 		if (isset($myid))
 		{
-			userIsActive($room, $myid);
+			userIsActiveInRoom($room, $myid);
 		}
 		debug("Room $room: $myid reports user $renamed renamed to $name");
 	}
@@ -95,7 +96,7 @@ if (isset($_GET['room']))
 		setAllUsers($room, $allusers);
 		if (isset($myid))
 		{
-			userIsActive($room, $myid);
+			userIsActiveInRoom($room, $myid);
 		}
 		$numUsers = count($allusers);
 		debug("Room $room: $myid reports total $numUsers users identified");

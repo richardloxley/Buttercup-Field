@@ -76,13 +76,461 @@
 
 .footer
 {
-	position: fixed;
-	left: 0;
-	bottom: 0;
+	margin-top: 30px;
 	height: 14px;
-	width: 100%;
 	background: #FFFED0;
 	padding: 8px;
 	font-size: 80%;
 	text-align: center;
+}
+
+#chat input[type=text]
+{
+	width: 90%;
+	border: 1px solid #ACD8F0;
+}
+
+#chatbox
+{
+	text-align: left;
+	margin: 0 auto;
+	margin-bottom: 25px;
+	padding: 10px;
+	background: #fff;
+	height: 270px;
+	border: 1px solid #ACD8F0;
+	overflow: auto;
+}
+
+
+
+.my-text-message,
+.my-text-message .post-name,
+.my-text-message .post-message
+{
+	float: right;
+}
+
+.text-message,
+.text-message .post-name,
+.text-message .post-message
+{
+	float: left;
+}
+
+.post-message
+{
+	border-radius: 5px;
+	padding: 3px 6px;;
+	color: black;
+}
+
+.my-text-message .post-message
+{
+	background: #9f9;
+	color: black;
+}
+
+.text-message .post-message
+{
+	background: #eaeaea;
+	margin-left: 5px;
+}
+
+/* arrow */
+.post-message::after
+{
+	content: "";
+	position: absolute;
+	top: 50%;
+	margin-top: -5px;
+	border-width: 5px;
+	border-style: solid;
+} 
+
+/* arrow */
+.my-text-message .post-message::after
+{
+	left: 100%;
+	border-color: transparent transparent transparent #9f9;
+}
+
+/* arrow */
+.text-message .post-message::after
+{
+	right: 100%;
+	border-color: transparent #eaeaea transparent transparent;
+}
+
+
+.my-text-message .post-time-wrapper .post-time::after
+{
+	right: 0%;
+	margin-right: 5px;
+}
+
+.text-message .post-time-wrapper .post-time::after
+{
+	left: 0%;
+	margin-left: 5px;
+}
+
+.end-of-message
+{
+	height: 5px;
+	clear: both;
+}
+
+.post-message
+{
+	position: relative;
+}
+
+.post-message:hover .post-time-wrapper
+{
+	visibility: visible;
+}
+
+.post-time-wrapper
+{
+	bottom: 100%;
+	visibility: hidden;
+	position: absolute;
+	z-index: 1;
+}
+
+.post-time
+{
+	background-color: black;
+	color: white;
+	text-align: center;
+	padding: 5px;
+	border-radius: 6px;
+	width: 100px;
+	margin-bottom: 5px;
+}
+
+.my-text-message .post-time-wrapper
+{
+	right: 0%;
+}
+
+.text-message .post-time-wrapper
+{
+	left: 0%;
+}
+
+/* arrow */
+.post-time::after
+{
+	content: " ";
+	position: absolute;
+	top: 100%;
+	margin-top: -5px;
+	border-width: 5px;
+	border-style: solid;
+	border-color: black transparent transparent transparent;
+} 
+
+.my-text-message .post-time-wrapper .post-time::after
+{
+	right: 0%;
+	margin-right: 5px;
+}
+
+.text-message .post-time-wrapper .post-time::after
+{
+	left: 0%;
+	margin-left: 5px;
+}
+
+.post-name
+{
+	font-weight: bold;
+	margin-right: 5px;
+}
+
+@font-face
+{
+	font-family: chalkFontTitle;
+	src: url(fonts/helsinki.ttf);
+}
+
+@font-face
+{
+	font-family: chalkFont0;
+	src: url(fonts/ApplestormRegular.otf);
+}
+
+@font-face
+{
+	font-family: chalkFont1;
+	src: url(fonts/CruPokawinAlizePencil.ttf);
+}
+
+@font-face
+{
+	font-family: chalkFont2;
+	src: url(fonts/ShortStack-Regular.otf);
+}
+
+@font-face
+{
+	font-family: chalkFont3;
+	src: url(fonts/ChalkboardByMartaVanEck.ttf);
+}
+
+@font-face
+{
+	font-family: chalkFont4;
+	src: url(fonts/RoughDustyChalk.otf);
+}
+
+@font-face
+{
+	font-family: chalkFont5;
+	src: url(fonts/GloriaHallelujah.ttf);
+}
+
+@font-face
+{
+	font-family: chalkFont6;
+	src: url(fonts/EraserRegular.ttf);
+}
+
+@font-face
+{
+	font-family: chalkFont7;
+	src: url(fonts/IndieFlower.ttf);
+}
+
+/*
+@font-face
+{
+	font-family: chalkFont5;
+	src: url(fonts/NewfontRegular.ttf);
+/* letter-spacing: -2px;
+/* transform: scale(.8,1);
+}
+*/
+
+.chalkTitle
+{
+	font-family: chalkFontTitle;
+}
+
+.chalk0
+{
+	font-family: chalkFont0;
+}
+
+.chalk1
+{
+	font-family: chalkFont1;
+}
+
+.chalk2
+{
+	font-family: chalkFont2;
+}
+
+.chalk3
+{
+	font-family: chalkFont3;
+}
+
+.chalk4
+{
+	font-family: chalkFont4;
+}
+
+.chalk5
+{
+	font-family: chalkFont5;
+}
+
+.chalk6
+{
+	font-family: chalkFont6;
+}
+
+.chalk7
+{
+	font-family: chalkFont7;
+}
+
+body.blackboard-body
+{
+	margin: 0;
+	background: url(images/chalkboard-texture-5-allfreedesigns.com-cropped-1000.jpg) black;
+	background-size: cover;
+}
+
+.blackboard-full
+{
+	padding: 20px;
+}
+
+.blackboard-thumb
+{
+	background: url(images/chalkboard-texture-5-allfreedesigns.com-cropped-1000.jpg) black;
+	background-size: cover;
+	position: relative;
+	width: 180px;
+	padding: 10px;
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 10px;
+}
+
+.blackboard-thumb .zoom
+{
+	position: absolute;
+	bottom: 10px;
+	right: 10px;
+	width: 30px;
+	height: 30px;
+	text-align: center;
+	border-radius: 10px;
+	font-size: 24px;
+	padding: 5px;
+	background: white;
+}
+
+.blackboard-thumb-end
+{
+	height: 5px;
+	clear: both;
+}
+
+.blackboard table
+{
+	color: white;
+	border: none;
+	border-collapse: collapse;
+}
+
+.blackboard-thumb table
+{
+	font-size: 90%;
+	width: 100%;
+	table-layout: fixed;
+}
+
+.blackboard-thumb table td.blackboard-ellipsis
+{
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+}
+
+.blackboard-full table
+{
+	font-size: 200%;
+	width: 100%;
+}
+
+.blackboard-item
+{
+	display: block;
+}
+
+.blackboard-item-edit
+{
+	display: none;
+}
+
+.blackboard .add-new-edit
+{
+	display: none;
+}
+
+.blackboard-item-edit textarea,
+.add-new-edit textarea
+{
+	width: 100%;
+	font-size: 100%;
+}
+
+.blackboard-item-reply textarea
+{
+	margin-left: 5%;
+	width: 95%;
+	font-size: 100%;
+}
+
+.blackboard table tr td.buttons
+{
+	padding-left: 10px;
+}
+
+
+.blackboard table td .buttons
+{
+	margin: 2px;
+	visibility: hidden;
+}
+
+.blackboard table tr:hover td .buttons
+{
+	visibility: visible;
+}
+
+.blackboard table tr:hover td .buttons-editing
+{
+	visibility: hidden;
+}
+
+.blackboard table td .buttons-enter
+{
+	display: none;
+}
+
+.blackboard table td .buttons-editing .buttons-enter
+{
+	display: block;
+}
+
+.blackboard-item-reply
+{
+	display: none;
+}
+
+.blackboard table td.add-new
+{
+	text-align: center;
+}
+
+/*
+.blackboard table td input[type=submit]
+{
+	width: 35px;
+	height: 30px;
+	margin: 2px;
+	font-size: 20px;
+}
+*/
+
+body.room-body
+{
+	margin: 0;
+}
+
+.room-thumbnail
+{
+	position: absolute;
+	left: 23px;
+	top: 10px;
+	width: 218px;
+	height: 96px;
+	background: url(/images/room-background-image.jpg);
+	filter: drop-shadow(0px 0px 10px rgba(0,0,0,1));
+}
+
+.room-thumbnail img
+{
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+	filter: drop-shadow(0px 0px 10px rgba(0,0,0,1));
 }
