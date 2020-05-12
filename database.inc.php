@@ -35,9 +35,46 @@ function execute_sql($sql)
 }
 
 
+function execute_sql_multiple($sql)
+{
+	// debug($sql);
+
+	global $DB_SERVERNAME;
+	global $DB_USERNAME;
+	global $DB_PASSWORD;
+	global $DB_DATABASE;
+
+	$conn = mysqli_connect($DB_SERVERNAME, $DB_USERNAME, $DB_PASSWORD, $DB_DATABASE);
+
+	if (!$conn)
+	{
+		error_log("MySQL connection failed: " . mysqli_connect_error());
+		return null;
+	}
+
+	if ($result = mysqli_multi_query($conn, $sql))
+	{
+		mysqli_close($conn);
+		return $result;
+	}
+	else
+	{
+		error_log("MySQL error: " . mysqli_error($conn) . " while executing: " . $sql);
+		mysqli_close($conn);
+		return null;
+	}
+}
+
+
 function post_text_chat($nickname, $message)
 {
 	$user_id = get_user_id($nickname);
+
+	if ($user_id < 0)
+	{
+		return;
+	}
+
 	$sql = "insert into text_chat (user_id, message) values ('$user_id', '$message')";
 	execute_sql($sql);
 }
@@ -236,7 +273,7 @@ function get_user_id($nickname)
 
 	if ($user == null)
 	{
-		return 0;
+		return -1;
 	}
 	else
 	{
@@ -353,6 +390,13 @@ function new_blackboard($nickname)
 }
 
 
+function delete_blackboard($board_id)
+{
+	$sql = "delete from blackboards where board_id = '$board_id'";
+	execute_sql($sql);
+}
+
+
 function get_blackboard_ids()
 {
 	$sql = "select board_id from blackboards group by board_id order by board_id asc";
@@ -401,6 +445,11 @@ function append_to_blackboard($board_id, $nickname, $text)
 {
 	$user_id = get_user_id($nickname);
 
+	if ($user_id < 0)
+	{
+		return;
+	}
+
 	$position_sql = "select max(position) as max_position from blackboards where board_id = '$board_id'";
 	$result = execute_sql($position_sql);
 
@@ -422,23 +471,57 @@ function append_to_blackboard($board_id, $nickname, $text)
 }
 
 
-function blackboard_edit($board_id, $message_id, $nickname, $text)
+function blackboard_edit($message_id, $nickname, $text)
 {
+	$user_id = get_user_id($nickname);
+
+	if ($user_id < 0)
+	{
+		return;
+	}
+
+	$sql = "update blackboards set user_id = $user_id, text = '$text' where message_id = $message_id";
+	execute_sql($sql);
 }
+
 
 function blackboard_reply($board_id, $message_id, $nickname, $text)
 {
 }
 
-function delete_from_blackboard($board_id, $message_id)
+function delete_from_blackboard($message_id)
 {
+// only works if deleting a top-level item
+	$sql = "lock table blackboards write;";
+	$sql .= "select @board := board_id, @pos := position from blackboards where message_id = '$message_id';";
+	// delete anything with same position number to delete replies too
+	$sql .= "delete from blackboards where board_id = @board and position = @pos;";
+	$sql .= "update blackboards set position = position - 1 where board_id = @board and position > @pos;";
+	$sql .= "unlock tables;";
+	execute_sql_multiple($sql);
 }
 
-function blackboard_move_up($board_id, $message_id)
+function blackboard_move_up($message_id)
 {
+// should check top/bottom
+	$sql = "lock table blackboards write;";
+	$sql .= "select @board := board_id, @pos := position from blackboards where message_id = '$message_id';";
+	$sql .= "update blackboards set position = -1 where board_id = @board and position = @pos;";
+	$sql .= "update blackboards set position = @pos where board_id = @board and position = @pos - 1;";
+	$sql .= "update blackboards set position = @pos - 1 where board_id = @board and position = -1;";
+	$sql .= "unlock tables;";
+	execute_sql_multiple($sql);
 }
 
-function blackboard_move_down($board_id, $message_id)
+function blackboard_move_down($message_id)
 {
+// should check top/bottom
+	$sql = "lock table blackboards write;";
+	$sql .= "select @board := board_id, @pos := position from blackboards where message_id = '$message_id';";
+	$sql .= "update blackboards set position = -1 where board_id = @board and position = @pos;";
+	$sql .= "update blackboards set position = @pos where board_id = @board and position = @pos + 1;";
+	$sql .= "update blackboards set position = @pos + 1 where board_id = @board and position = -1;";
+	$sql .= "unlock tables;";
+	execute_sql_multiple($sql);
 }
 

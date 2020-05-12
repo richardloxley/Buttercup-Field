@@ -403,11 +403,27 @@ body.blackboard-body
 	clear: both;
 }
 
-.blackboard table
+.blackboard table,
+.blackboard .table
 {
 	color: white;
 	border: none;
 	border-collapse: collapse;
+}
+
+.blackboard .table
+{
+	display: table;
+}
+
+.blackboard .row
+{
+	display: table-row;
+}
+
+.blackboard .cell
+{
+	display: table-cell;
 }
 
 .blackboard-thumb table
@@ -424,7 +440,7 @@ body.blackboard-body
 	text-overflow: ellipsis;
 }
 
-.blackboard-full table
+.blackboard-full .table
 {
 	font-size: 200%;
 	width: 100%;
@@ -438,6 +454,16 @@ body.blackboard-body
 .blackboard-item-edit
 {
 	display: none;
+}
+
+.blackboard .cell form
+{
+	margin-bottom: 20px;
+}
+
+.blackboard .blackboard-title .cell
+{
+	padding-bottom: 20px;
 }
 
 .blackboard .add-new-edit
@@ -459,50 +485,61 @@ body.blackboard-body
 	font-size: 100%;
 }
 
-.blackboard table tr td.buttons
+.blackboard .buttons-cell
 {
+	vertical-align: middle;
 	padding-left: 10px;
+	white-space: nowrap;
 }
 
-
-.blackboard table td .buttons
+.blackboard .table .cell .buttons
 {
 	margin: 2px;
 	visibility: hidden;
 }
 
-.blackboard table tr:hover td .buttons
+.blackboard .table .row
+{
+}
+
+.blackboard .table .highlightable:hover
+{
+	outline-style: dotted;
+}
+
+.blackboard .table .row:hover .buttons
 {
 	visibility: visible;
 }
 
-.blackboard table tr:hover td .buttons-editing
+.blackboard .table .row:hover .buttons-editing
 {
 	visibility: hidden;
 }
 
-.blackboard table td .buttons-enter
+.blackboard .table .cell .buttons-enter
 {
 	display: none;
 }
 
-.blackboard table td .buttons-editing .buttons-enter
+.blackboard .table .cell .buttons-editing .buttons-enter
 {
 	display: block;
 }
 
-.blackboard-item-reply
+.blackboard .table .blackboard-item-reply
 {
 	display: none;
 }
 
-.blackboard table td.add-new
+.blackboard .table .add-new
 {
 	text-align: center;
+	padding-top: 20px;
 }
 
 /*
-.blackboard table td input[type=submit]
+.blackboard .table .cell input[type=submit]
 {
 	width: 35px;
 	height: 30px;

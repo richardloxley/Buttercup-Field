@@ -51,15 +51,21 @@ function handlePostVariables()
 		}
 	}
 
-	if (is_variable_set("new_blackboard"))
+	$me = getNickname();
+	if ($me != "")
 	{
-		$me = getNickname();
-
-		if ($me != "")
+		if (is_variable_set("new_blackboard"))
 		{
 			new_blackboard($me);
 		}
+
+		if (is_variable_set("delete-blackboard") && is_variable_set("board-id"))
+		{
+			$boardID = sanitised_as_int("board-id");
+			delete_blackboard($boardID);
+		}
 	}
+
 }
 
 
