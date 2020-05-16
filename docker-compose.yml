@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    depends_on:
+      - database
+    environment:
+      PASSWORD: "saucer"
+      PASSWORD_HINT: "(Hint: what would you put your cup on?)"
+      DB_SERVERNAME: database
+      DB_DATABASE: festival
+      DB_USERNAME: festival
+      DB_PASSWORD: password
+    ports:
+      - 8000:80
+  database:
+    image: mariadb:10.5
+    environment:
+      MYSQL_DATABASE: festival
+      MYSQL_USER: festival
+      MYSQL_PASSWORD: password
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
+    volumes:
+      - ./database.schema.sql:/docker-entrypoint-initdb.d/database.schema.sql:ro
