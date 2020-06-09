@@ -1,8 +1,12 @@
 <?php
-        include_once("../user-input.inc.php");
-        include_once("../database.inc.php");
         include_once("../config.inc.php");
-        include_once("../blackboard.inc.php");
+        include_once("../include/user-input.inc.php");
+        include_once("../include/database.inc.php");
+        include_once("../include/blackboard.inc.php");
+	include_once("../include/password.inc.php");
+	include_once("../include/template.inc.php");
+
+	goHomeOnWrongPassword();
 
 	$userNickname = getNickname();
 
@@ -14,12 +18,16 @@
 	}
 
 
-	$messages = array();
+	$boardID = -1;
 
-	if ($editable && is_variable_set("board"))
+	if (is_variable_set("board"))
 	{
 		$boardID = sanitised_as_int("board");
+	}
+		
 
+	if ($editable && $boardID >= 0)
+	{
 		if (is_variable_set("finish-add-new") && is_variable_set("blackboard-add-new"))
 		{
 			$text = sanitised_as_text("blackboard-add-new");
@@ -58,15 +66,13 @@
 			$message_id = sanitised_as_int("blackboard-item-id");
 			blackboard_move_down($message_id);
 		}
-
-
 	/*
 			finish-reply
 				function blackboard_reply($board_id, $message_id, $nickname, $text)
 	*/
-
-		$messages = get_blackboard_contents($boardID);
 	}
+
+	$messages = get_blackboard_contents($boardID);
 
 	if (count($messages) == 0)
 	{
@@ -86,18 +92,9 @@
 			$page_title = "Unnamed board";
 		}
 	}
-?>
-	<!doctype html public "-//w3c//dtd html 4.0 transitional//en">
-	<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-		<title><?php echo $page_title;?></title>
-		<link rel="stylesheet" href="../style.css" type="text/css">
-		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.3/jquery.min.js"></script>
-	</head>
-	<body class="blackboard-body">
 
+	draw_header($page_title, "blackboard-body");
+?>
 	<script type="text/javascript">
 
 	function showEditBox(row)
@@ -193,6 +190,8 @@
 
 	</script>
 <?php
+	draw_touchscreen_detection();
+
 	$postURL = $_SERVER["REQUEST_URI"];
 
 	echo "<div class='blackboard blackboard-full'>";
@@ -204,12 +203,12 @@
 	// back button
 	echo "<span class='cell'>";
 	echo "<form method='post' action='/'>";
-	echo "<input type='submit' name='back' value='Back'>";
+	echo "<input type='submit' name='back' class='icons' value='" . icon_back_hand() . "'>";
 	echo "</form>";
 	echo "</span>";
 
 	// delete board button
-	if (count($messages) == 0)
+	if ($editable && count($messages) == 0)
 	{
 		// only allow them to delete the board when it's empty
 		echo "<span class='cell buttons-cell'>";
@@ -258,13 +257,13 @@
 
 		// buttons (visible on hover)
 		echo "<div class='buttons'>";
-		echo "<input type='submit' class='edit' name='edit' value='Edit'>";
+		echo "<input type='submit' class='edit icons' name='edit' value='" . icon_edit() . "'>";
 		echo "</div>";
 
 		// enter/cancel buttons (usually hidden)
 		echo "<div class='buttons-enter'>";
-		echo "<input type='submit' class='finish-edit default-button' name='finish-edit' value='Enter'>";
-		echo "<input type='submit' class='finish-edit cancel-button' name='cancel-edit' value='Cancel'>";
+		echo "<input type='submit' class='icons finish-edit default-button' name='finish-edit' value='" . icon_tick() . "'>";
+		echo "<input type='submit' class='icons finish-edit cancel-button' name='cancel-edit' value='" . icon_cross() . "'>";
 		echo "</div>";
 
 		echo "</span>";
@@ -275,7 +274,7 @@
 
 	// messages
 
-	$num_fonts = 8;
+	$num_fonts = 7;
 	$my_font = crc32($userNickname) % $num_fonts;
 
 	foreach ($messages as $index => $message)
@@ -297,7 +296,20 @@
 		$when = $message["edit_timestamp"];
 		$is_reply = $message["is_reply"];
 		$message_id = $message["message_id"];
-		$text = htmlspecialchars($message["text"], ENT_QUOTES);
+		$text = $message["text"];
+		$recent_12 = $message["recent_12"];
+		$recent_24 = $message["recent_24"];
+
+		$recent_tag = "";
+
+		if ($recent_12)
+		{
+			$recent_tag = "recent_12";
+		}
+		else if ($recent_24)
+		{
+			$recent_tag = "recent_24";
+		}
 
 		$font = crc32($who) % $num_fonts;
 
@@ -307,7 +319,7 @@
 		echo "<span class='cell chalk$font'>";
 
 		// current item
-		echo "<div class='blackboard-item'>";
+		echo "<div class='blackboard-item $recent_tag'>";
 		echo $text;
 		echo "</div>";
 
@@ -329,17 +341,17 @@
 
 			// buttons (visible on hover)
 			echo "<div class='buttons'>";
-			echo "<input type='submit' class='reply'  name='reply'  value='Reply'>";
-			echo "<input type='submit' class='edit'   name='edit'   value='Edit'>";
-			echo "<input type='submit' class='delete' name='delete' value='Delete'>";
-			echo "<input type='submit'                name='up'     value='Up'   $up_disabled>";
-			echo "<input type='submit'                name='down'   value='Down' $down_disabled>";
+			// TODO replies echo "<input type='submit' class='reply'  name='reply'  value='Reply'>";
+			echo "<input type='submit' class='icons edit '  name='edit'   value='" . icon_edit() . "'>";
+			echo "<input type='submit' class='icons delete' name='delete' value='" . icon_trash() . "'>";
+			echo "<input type='submit' class='icons'        name='up'     value='" . icon_up() . "' $up_disabled>";
+			echo "<input type='submit' class='icons'        name='down'   value='" . icon_down() . "' $down_disabled>";
 			echo "</div>";
 
 			// enter/cancel buttons (usually hidden)
 			echo "<div class='buttons-enter'>";
-			echo "<input type='submit' class='finish-edit default-button' name='finish-edit' value='Enter'>";
-			echo "<input type='submit' class='finish-edit cancel-button' name='cancel-edit' value='Cancel'>";
+			echo "<input type='submit' class='icons finish-edit default-button' name='finish-edit' value='" . icon_tick() . "'>";
+			echo "<input type='submit' class='icons finish-edit cancel-button' name='cancel-edit' value='" . icon_cross() . "'>";
 			echo "</div>";
 
 			echo "</span>";
@@ -372,7 +384,7 @@
 		// "add new" button
 		echo "<form class='row' method='post' action='$postURL'>";
 		echo "<span class='cell add-new'>";
-		echo "<input type='submit' name='new' value='Add a new entry'>";
+		echo "<input type='submit' class='icons' name='new' value='" . icon_plus_in_circle() . "'>";
 		echo "</span>";
 		echo "</form>";
 
@@ -386,8 +398,8 @@
 		// enter/cancel buttons
 		echo "<span class='cell buttons-cell'>";
 		echo "<div class='add-new-enter'>";
-		echo "<input type='submit' class='finish-add-new default-button' name='finish-add-new' value='Enter'>";
-		echo "<input type='submit' class='finish-add-new cancel-button' name='cancel-add-new' value='Cancel'>";
+		echo "<input type='submit' class='icons finish-add-new default-button' name='finish-add-new' value='" . icon_tick() . "'>";
+		echo "<input type='submit' class='icons finish-add-new cancel-button' name='cancel-add-new' value='" . icon_cross() . "'>";
 		echo "</div>";
 		echo "</span>";
 		echo "</form>";

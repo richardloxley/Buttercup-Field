@@ -1,13 +1,15 @@
 <?php
 
-include_once("template.inc.php");
-include_once("password.inc.php");
-include_once("mobile.inc.php");
-include_once("user-input.inc.php");
-include_once("database.inc.php");
-include_once("blackboard.inc.php");
-include_once("text-chat.inc.php");
-include_once("video-chat.inc.php");
+include_once("include/template.inc.php");
+include_once("include/password.inc.php");
+include_once("include/mobile.inc.php");
+include_once("include/user-input.inc.php");
+include_once("include/database.inc.php");
+include_once("include/blackboard.inc.php");
+include_once("include/text-chat.inc.php");
+include_once("include/video-chat.inc.php");
+include_once("include/active-users.inc.php");
+include_once("include/special-events.inc.php");
 
 
 $duplicate_nickname = "";
@@ -46,7 +48,7 @@ function handlePostVariables()
 			else
 			{
 				save_as_renamed_cookie("submitted_nickname", "nickname");
-				create_user(getNickname());
+				create_user(getClaimedNickname());
 			}
 		}
 	}
@@ -56,7 +58,9 @@ function handlePostVariables()
 	{
 		if (is_variable_set("new_blackboard"))
 		{
-			new_blackboard($me);
+			$new_board = new_blackboard($me);
+			header("Location: /blackboard/$new_board");
+			exit();
 		}
 
 		if (is_variable_set("delete-blackboard") && is_variable_set("board-id"))
@@ -66,6 +70,7 @@ function handlePostVariables()
 		}
 	}
 
+	handle_video_room_form();
 }
 
 
@@ -81,14 +86,24 @@ function duplicateNickname()
 // do this first as we need to set cookies before outputting headers
 handlePostVariables();
 
-draw_header();
+draw_header("", "");
 
-if (gotPassword())
+if (askForPasswordIfRequired())
 {
-	draw_nickname_form();
+	echo "<div id='home-header'>";
+		echo "<div id='user-profile'>";
+			draw_logout_button();
+			draw_nickname_form();
+		echo "</div>";
+		echo "<h1>";
+			echo $SITE_TITLE;
+		echo "</h1>";
+	echo "</div>";
+
 	draw_blackboard_thumbs();
 	draw_users_online();
-	draw_text_chat();
+	draw_special_events();
+	draw_text_chat(0, $MAIN_TEXT_CHAT_TITLE, false);
 	draw_video_chat();
 }
 

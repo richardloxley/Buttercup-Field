@@ -1,9 +1,12 @@
 <?php
 
 include_once("config.inc.php");
-include_once("database.inc.php");
-include_once("debug.inc.php");
-include_once("user-input.inc.php");
+include_once("include/database.inc.php");
+include_once("include/debug.inc.php");
+include_once("include/user-input.inc.php");
+include_once("include/password.inc.php");
+
+goHomeOnWrongPassword();
 
 
 // room ID
